@@ -243,14 +243,14 @@ menusplash ENDP
 
 gameinit PROC uses eax ecx edx
 	call clrscr
-	mov camp.x, 150
-	mov camp.y, 150
-	mov camd, 0
-	mov stage, 0
 	mov goal.x, 0
 	mov goal.y, 0
 	mov goal.off, 0
 	call generatemap
+	mov camp.x, 150
+	mov camp.y, 150
+	mov camd, 0
+	mov stage, 0
 	;print instructions and minimap
 	call gamemap
 	call crlf
@@ -399,7 +399,20 @@ map_init:
 			push dx
 			mov dx, bx
 		.ENDIF
-		;call gamemap
+		push edx
+		movzx eax, dl
+		mov edx, 0
+		mov ecx, BLOCK_SIZE
+		mul ecx
+		mov camp.x, eax
+		pop edx
+		movzx eax, dh
+		push edx
+		mov edx, 0
+		mul ecx
+		mov camp.y, eax
+		pop edx
+		call gamemap
 		;call dumpregs
 		;call waitmsg
 	.ENDW

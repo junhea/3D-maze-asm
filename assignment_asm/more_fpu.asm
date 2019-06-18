@@ -1,7 +1,4 @@
-;12181711 홍정희
-;어셈블리어-002 Term Project
-;3D_MAZE.asm
-
+;MORE FPU
 INCLUDE Irvine32.inc
 
 SCREEN_W equ 119   ;출력 화면 넓이
@@ -26,48 +23,14 @@ point ENDS
     floor_t BYTE "    .^",0      ;바닥 텍스쳐
     pixels BYTE SCREEN_H-1 DUP(SCREEN_W DUP(?), 0dh, 0ah), SCREEN_W DUP(?),0    ;픽셀 버퍼
 	zero REAL8 0.0	;fpu 연산에 사용되는 0
+	den REAL8 0.0
+	tval REAL8 0.0
+	rad REAL8 180.0
 	stage BYTE 0	;상태 (1: 게임 클리어, 2: 메뉴로 돌아가기)
-
 	world BYTE WORLD_X * WORLD_Y DUP(0)
 
-	;미리 계산한 각도별 방향 벡터 & 단위벡터 (좌표계가 정수 & 속도 개선)
-	angles	vector <100,0>,<99,1>,<99,3>,<99,5>,<99,6>,<99,8>,<99,10>,<99,12>,<99,13>,<98,15>	;cos x * 100, sin x * 100
-			vector <98,17>,<98,19>,<97,20>,<97,22>,<97,24>,<96,25>,<96,27>,<95,29>,<95,30>,<94,32>
-			vector <93,34>,<93,35>,<92,37>,<92,39>,<91,40>,<90,42>,<89,43>,<89,45>,<88,46>,<87,48>
-			vector <86,50>,<85,51>,<84,52>,<83,54>,<82,55>,<81,57>,<80,58>,<79,60>,<78,61>,<77,62>
-			vector <76,64>,<75,65>,<74,66>,<73,68>,<71,69>,<70,70>,<69,71>,<68,73>,<66,74>,<65,75>
-			vector <64,76>,<62,77>,<61,78>,<60,79>,<58,80>,<57,81>,<55,82>,<54,83>,<52,84>,<51,85>
-			vector <49,86>,<48,87>,<46,88>,<45,89>,<43,89>,<42,90>,<40,91>,<39,92>,<37,92>,<35,93>
-			vector <34,93>,<32,94>,<30,95>,<29,95>,<27,96>,<25,96>,<24,97>,<22,97>,<20,97>,<19,98>
-			vector <17,98>,<15,98>,<13,99>,<12,99>,<10,99>,<8,99>,<6,99>,<5,99>,<3,99>,<1,99>
-			vector <-1,100>,<-2,99>,<-4,99>,<-6,99>,<-7,99>,<-9,99>,<-11,99>,<-13,99>,<-14,99>,<-16,98>
-			vector <-18,98>,<-20,98>,<-21,97>,<-23,97>,<-25,97>,<-26,96>,<-28,96>,<-30,95>,<-31,95>,<-33,94>
-			vector <-35,93>,<-36,93>,<-38,92>,<-40,92>,<-41,91>,<-43,90>,<-44,89>,<-46,89>,<-47,88>,<-49,87>
-			vector <-51,86>,<-52,85>,<-53,84>,<-55,83>,<-56,82>,<-58,81>,<-59,80>,<-61,79>,<-62,78>,<-63,77>
-			vector <-65,76>,<-66,75>,<-67,74>,<-69,73>,<-70,71>,<-71,70>,<-72,69>,<-74,68>,<-75,66>,<-76,65>
-			vector <-77,64>,<-78,62>,<-79,61>,<-80,60>,<-81,58>,<-82,57>,<-83,55>,<-84,54>,<-85,52>,<-86,51>
-			vector <-87,50>,<-88,48>,<-89,46>,<-90,45>,<-90,43>,<-91,42>,<-92,40>,<-93,39>,<-93,37>,<-94,35>
-			vector <-94,34>,<-95,32>,<-96,30>,<-96,29>,<-97,27>,<-97,25>,<-98,24>,<-98,22>,<-98,20>,<-99,19>
-			vector <-99,17>,<-99,15>,<-100,13>,<-100,12>,<-100,10>,<-100,8>,<-100,6>,<-100,5>,<-100,3>,<-100,1>
-			vector <-100,-1>,<-100,-2>,<-100,-4>,<-100,-6>,<-100,-7>,<-100,-9>,<-100,-11>,<-100,-13>,<-100,-14>,<-99,-16>
-			vector <-99,-18>,<-99,-20>,<-98,-21>,<-98,-23>,<-98,-25>,<-97,-26>,<-97,-28>,<-96,-30>,<-96,-31>,<-95,-33>
-			vector <-94,-35>,<-94,-36>,<-93,-38>,<-93,-40>,<-92,-41>,<-91,-43>,<-90,-44>,<-90,-46>,<-89,-47>,<-88,-49>
-			vector <-87,-50>,<-86,-52>,<-85,-53>,<-84,-55>,<-83,-56>,<-82,-58>,<-81,-59>,<-80,-61>,<-79,-62>,<-78,-63>
-			vector <-77,-65>,<-76,-66>,<-75,-67>,<-74,-69>,<-72,-70>,<-71,-71>,<-70,-72>,<-69,-74>,<-67,-75>,<-66,-76>
-			vector <-65,-77>,<-63,-78>,<-62,-79>,<-61,-80>,<-59,-81>,<-58,-82>,<-56,-83>,<-55,-84>,<-53,-85>,<-52,-86>
-			vector <-50,-87>,<-49,-88>,<-47,-89>,<-46,-90>,<-44,-90>,<-43,-91>,<-41,-92>,<-40,-93>,<-38,-93>,<-36,-94>
-			vector <-35,-94>,<-33,-95>,<-31,-96>,<-30,-96>,<-28,-97>,<-26,-97>,<-25,-98>,<-23,-98>,<-21,-98>,<-20,-99>
-			vector <-18,-99>,<-16,-99>,<-14,-100>,<-13,-100>,<-11,-100>,<-9,-100>,<-7,-100>,<-6,-100>,<-4,-100>,<-2,-100>
-			vector <0,-100>,<1,-100>,<3,-100>,<5,-100>,<6,-100>,<8,-100>,<10,-100>,<12,-100>,<13,-100>,<15,-99>
-			vector <17,-99>,<19,-99>,<20,-98>,<22,-98>,<24,-98>,<25,-97>,<27,-97>,<29,-96>,<30,-96>,<32,-95>
-			vector <34,-94>,<35,-94>,<37,-93>,<39,-93>,<40,-92>,<42,-91>,<43,-90>,<45,-90>,<46,-89>,<48,-88>
-			vector <49,-87>,<51,-86>,<52,-85>,<54,-84>,<55,-83>,<57,-82>,<58,-81>,<60,-80>,<61,-79>,<62,-78>
-			vector <64,-77>,<65,-76>,<66,-75>,<68,-74>,<69,-72>,<70,-71>,<71,-70>,<73,-69>,<74,-67>,<75,-66>
-			vector <76,-65>,<77,-63>,<78,-62>,<79,-61>,<80,-59>,<81,-58>,<82,-56>,<83,-55>,<84,-53>,<85,-52>
-			vector <86,-51>,<87,-49>,<88,-47>,<89,-46>,<89,-44>,<90,-43>,<91,-41>,<92,-40>,<92,-38>,<93,-36>
-			vector <93,-35>,<94,-33>,<95,-31>,<95,-30>,<96,-28>,<96,-26>,<97,-25>,<97,-23>,<97,-21>,<98,-20>
-			vector <98,-18>,<98,-16>,<99,-14>,<99,-13>,<99,-11>,<99,-9>,<99,-7>,<99,-6>,<99,-4>,<99,-2>
 
+	;미리 계산한 각도별 방향 벡터 & 단위벡터 (좌표계가 정수 & 속도 개선을 위함)
 	walk	vector <5,0>,<4,0>,<4,0>,<4,0>,<4,0>,<4,0>,<4,0>,<4,0>,<4,0>,<4,0>	;cos x * 5, sin x * 5
 			vector <4,0>,<4,0>,<4,1>,<4,1>,<4,1>,<4,1>,<4,1>,<4,1>,<4,1>,<4,1>
 			vector <4,1>,<4,1>,<4,1>,<4,1>,<4,2>,<4,2>,<4,2>,<4,2>,<4,2>,<4,2>
@@ -112,7 +75,7 @@ point ENDS
 	goal point <>	;골지점 벡터
 
 	;출력에 사용되는 문자열들
-	clear_msg BYTE SCREEN_W DUP('='),0dh,0ah, SCREEN_W DUP(' '),0dh,0ah, 54 DUP(' '), "stage clear!", SCREEN_W-66 DUP (' '), 0dh, 0ah,  SCREEN_W DUP(' '), 0dh, 0ah, SCREEN_W DUP('='), 0
+	clear_msg BYTE SCREEN_W DUP('='),0dh,0ah, SCREEN_W DUP(' '),0dh,0ah, 54 DUP(' '), "stage clear!", SCREEN_W-64 DUP (' '), 0dh, 0ah,  SCREEN_W DUP(' '), 0dh, 0ah, SCREEN_W DUP('='), 0
 	title_msg BYTE 13 DUP (SCREEN_W DUP ('.'), 0dh, 0ah), SCREEN_W DUP (' '), 0dh, 0ah, 56 DUP (' '), "3D MAZE", SCREEN_W-63 DUP (' '), 0dh, 0ah, SCREEN_W DUP (' '), 0dh, 0ah, 13 DUP (SCREEN_W DUP ('.'), 0dh, 0ah), SCREEN_W DUP ('.'), 0
 	help_msg BYTE "INSTRUCTIONS:", 0dh, 0ah, 0ah, "W,A,S,D : move", 0dh, 0ah, "<,> : change camera angle", 0dh, 0ah
 			BYTE "M : view minimap", 0dh, 0ah, "Q : exit to menu", 0dh, 0ah, "R : reset current position", 0dh, 0ah
@@ -121,6 +84,8 @@ point ENDS
 	minimap_msg BYTE "Generated map :  ", 0dh, 0ah, 0
 	half_line BYTE 60 DUP (' '), 0dh, 0ah, 0
 	
+	aa REAL8 -2.0
+
 .code
 
 ;--------------------------------------------
@@ -129,6 +94,15 @@ main PROC
 ; Input: nothing
 ; Output: nothing
 ;--------------------------------------------
+	mov tmp[0].x, 100
+	mov tmp[0].y, 200
+	mov tmp[1*TYPE vector].x, 200
+	mov tmp[1*TYPE vector].y, 200
+	mov esi, 90
+	mov camp.x, 150
+	mov camp.y, 150
+	call intersect
+
 menu_loop:
 	call menusplash	;press any key to start
 game_init:
@@ -775,8 +749,9 @@ shootray PROC uses eax ecx edx esi
 	mov ebx, -1
 	;loop through all blocks
 	mov edx, 0
-	.WHILE dh < WORLD_Y	;loop y
+	.WHILE dh < WORLD_Y ;loop y
 		.WHILE dl < WORLD_X ;loop x
+			mov eax, edx
 			call wctoi	;index is in eax
 			movzx eax, world[eax]
 			.IF eax == 1	; is a block
@@ -831,141 +806,151 @@ intersect PROC uses ebx ecx edx edi esi
 ;--------------------------------------------
 	;if intersects, return distance (-1 = no intersection)
 	mov ebx, -1
-	mov eax, angles[esi*TYPE vector].x
-    mov tmp[2*TYPE vector].x, eax
-	mov eax, angles[esi*TYPE vector].y
-	mov tmp[2*TYPE vector].y, eax
-	mov eax, camp.x
-    add tmp[2*TYPE vector].x, eax
-	mov eax, camp.y
-    add tmp[2*TYPE vector].y, eax
-
 	;den = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
-	mov eax, tmp[0*TYPE vector].x	;x1
-	sub eax, tmp[1*TYPE vector].x	;-x2
-	mov ecx, camp.y	;y3
-	sub ecx, tmp[2*TYPE vector].y	;-y4
-	mov edx, 0
-	mul ecx
-	push eax
-	mov eax, tmp[0*TYPE vector].y	;y1
-	sub eax, tmp[1*TYPE vector].y	;-y2
-	mov ecx, camp.x	;x3
-	sub ecx, tmp[2*TYPE vector].x	;-x4
-	mov edx, 0
-	mul ecx
-	pop ecx
-	sub ecx, eax
-	.IF ecx == 0	;if den == 0
-		jmp intersect_ret
-	.ENDIF
-	push ecx	;den
 	finit
+	fild tmp[0*TYPE vector].x	;x1
+	fild tmp[1*TYPE vector].x	
+	fsub						;-x2
+	fild camp.y	;y3
+	fild camp.y
+	push esi
+	fild dword ptr[esp]
+	pop esi
+	fld rad
+	fdiv
+	fldpi
+	fmul
+	fsin
+	fadd
+	fsub						;-y4
+	fmul						;*
+	fild tmp[0*TYPE vector].y	;y1
+	fild tmp[1*TYPE vector].y	;-y2
+	fsub
+	fild camp.x	;x3
+	fild camp.x
+	push esi
 	fild DWORD PTR [esp]
-	fwait
-	pop ecx
+	pop esi
+	fld rad
+	fdiv
+	fldpi
+	fmul
+	fcos
+	fadd
+	fsub;-x4
+	fmul;*
+	fsub	;ST(0) = denominator
+	fst den
+	fld zero
+	fcomip ST(0), ST(1)	;if den == 0
+	je intersect_ret
 	;t = (x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4) / den
-	mov eax, tmp[0*TYPE vector].x	;x1
-	sub eax, camp.x	;-x3
-	mov ecx, camp.y	;y3
-	sub ecx, tmp[2*TYPE vector].y	;-y4
-	mov edx, 0
-	mul ecx
-	push eax
-	mov eax, tmp[0*TYPE vector].y	;y1
-	sub eax, camp.y	;-y3
-	mov ecx, camp.x	;x3
-	sub ecx, tmp[2*TYPE vector].x	;-x4
-	mov edx, 0
-	mul ecx
-	pop ecx
-	sub ecx, eax
-	push ecx
+	fild tmp[0*TYPE vector].x	;x1
+	fild camp.x	;-x3
+	fsub
+	fild camp.y	;y3
+	fild camp.y
+	push esi
 	fild DWORD PTR [esp]
-	fwait
-	pop ecx
-	fdiv ST(0), ST(1)	;ST(0) = t
-	fild zero	;0 < t
-	fwait
-	test al, al
+	pop esi
+	fld rad
+	fdiv
+	fldpi
+	fmul
+	fsin
+	fadd
+	fsub;-y4
+	fmul
+	fild tmp[0*TYPE vector].y	;y1
+	fild camp.y	;-y3
+	fsub
+	fild camp.x	;x3
+	fild camp.x
+	push esi
+	fild DWORD PTR [esp]
+	pop esi
+	fld rad
+	fdiv
+	fldpi
+	fmul
+	fcos
+	fadd
+	fsub	;-x4
+	fmul
+	fsub
+	fld den
+	fdiv
+	fst tval
+	fld zero	;0 < t
 	fcomip ST(0), ST(1)
 	jae intersect_ret
 	mov eax, 1
 	push eax
 	fild DWORD PTR [esp]	;1 > t
-	fwait
 	pop eax
-	test al, al
 	fcomip ST(0), ST(1)
 	jbe intersect_ret
 	;u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / den;
-	mov eax, tmp[0*TYPE vector].x	;x1
-	sub eax, tmp[1*TYPE vector].x	;-x2
-	mov ecx, tmp[0*TYPE vector].y	;y1
-	sub ecx, camp.y	;-y3
-	mov edx, 0
-	mul ecx
-	push eax
-	mov eax, tmp[0*TYPE vector].y	;y1
-	sub eax, tmp[1*TYPE vector].y	;-y2
-	mov ecx, tmp[0*TYPE vector].x	;x1
-	sub ecx, camp.x					;-x3
-	mov edx, 0
-	mul ecx
-	pop ecx
-	sub ecx, eax
-	push ecx
-	fild DWORD PTR [esp]	
+	fild tmp[0*TYPE vector].x	;x1
+	fild tmp[1*TYPE vector].x	
+	fsub;-x2
+	fild tmp[0*TYPE vector].y	;y1
+	fild camp.y	;-y3
+	fsub
+	fmul
+	fild tmp[0*TYPE vector].y	;y1
+	fild tmp[1*TYPE vector].y	
+	fsub	;-y2
+	fild tmp[0*TYPE vector].x	;x1
+	fild camp.x	
+	fsub	;-x3
+	fmul
+	fsub
 	fchs
-	fwait
-	pop ecx
-	fdiv ST(0), ST(2)	;ST(0) = u, ST(1) = t, ST(2) = den
+	fld den
+	fdiv
 	fild zero	;0 < u
-	fwait
-	test al, al
 	fcomip ST(0), ST(1)
 	jae intersect_ret
 	;make vector and get length
 	;x = x1 + t * (x2 - x1) - camx
 	mov eax, tmp[0*TYPE vector].x
 	mov tmp[3*TYPE vector].x, eax	; x1
-	mov eax, tmp[1*TYPE vector].x
-	sub eax, tmp[0*TYPE vector].x
+	fild tmp[1*TYPE vector].x	;x2
+	fild tmp[0*TYPE vector].x	
+	fsub	;-x1
+	fld tval
+	fmul
+	fild camp.x	;-camx
+	fsub
 	push eax
-	fild DWORD PTR [esp]	;ST(0) = x2-x1, ST(1) = u, ST(2) = t, ST(3) = den
-	fmul ST(0), ST(2)
 	fisttp DWORD PTR [esp]	;save float to stack as int
-	fwait
 	pop eax
 	add tmp[3*TYPE vector].x, eax	;+ t*(x2-x1)
 	;y = y1 + t * (y2 - y1) - camy
 	mov eax, tmp[0*TYPE vector].y
 	mov tmp[3*TYPE vector].y, eax	; y1
-	mov eax, tmp[1*TYPE vector].y
-	sub eax, tmp[0*TYPE vector].y
+	fild tmp[1*TYPE vector].y
+	fild tmp[0*TYPE vector].y
+	fsub
+	fld tval 
+	fmul
+	fild camp.y
+	fsub
 	push eax
-	fild DWORD PTR [esp]	;ST(0) = y2-y1, ST(1) = u, ST(2) = t, ST(3) = den
-	fmul ST(0), ST(2)
 	fisttp DWORD PTR [esp]	;save float to stack as int
-	fwait
 	pop eax
 	add tmp[3*TYPE vector].y, eax	;+ t*(y2-y1)
-	mov eax, camp.x
-	sub tmp[3*TYPE vector].x, eax
-	mov eax, camp.y
-	sub tmp[3*TYPE vector].y, eax
-	mov eax, tmp[3*TYPE vector].x
 	mov eax, tmp[3*TYPE vector].y
+	mov eax, tmp[3*TYPE vector].x
 	mov edi, 3
 	call getlength
 	mov ebx, eax
 intersect_ret:
-	fwait
 	mov eax, ebx
 	ret
 intersect ENDP
-
-
 
 ;--------------------------------------------
 ctoi PROC uses ebx ecx edx
